@@ -15,6 +15,7 @@ that server moves its pin, and moves nothing else.
 |---|---|
 | `APP_SCRIPT` | `veoveoApp`: the MCP Apps bridge and the host's theme, for any App |
 | `gallery(title, adapter)` | The document of a gallery App |
+| `gallery_file(title, adapter)` | The same in a temporary file, which a server loads at startup with `AppHtml::load` |
 
 ## The Look
 

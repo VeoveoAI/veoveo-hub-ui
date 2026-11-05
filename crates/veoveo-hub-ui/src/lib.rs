@@ -31,6 +31,19 @@ pub fn gallery(title: &str, adapter: &str) -> String {
     )
 }
 
+/// Writes a gallery's document to a file in the system's temporary folder and answers its path, for
+/// a server to load at startup as it would any App's document.
+pub fn gallery_file(title: &str, adapter: &str) -> std::io::Result<std::path::PathBuf> {
+    let name: String = title
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .collect::<String>()
+        .to_ascii_lowercase();
+    let path = std::env::temp_dir().join(format!("veoveo-app-{}-{name}.html", std::process::id()));
+    std::fs::write(&path, gallery(title, adapter))?;
+    Ok(path)
+}
+
 fn escaped(value: &str) -> String {
     value
         .replace('&', "&amp;")
@@ -45,6 +58,17 @@ mod tests {
     use std::process::Command;
 
     const ADAPTER: &str = "veoveoGallery((ui) => ({ title: \"T\" }));";
+
+    #[test]
+    fn a_file_holds_the_document() {
+        let path = gallery_file("Some Title!", ADAPTER).unwrap();
+        assert!(path.to_string_lossy().contains("sometitle.html"));
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            gallery("Some Title!", ADAPTER)
+        );
+        std::fs::remove_file(path).unwrap();
+    }
 
     #[test]
     fn a_title_is_text() {
