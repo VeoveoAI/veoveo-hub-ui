@@ -1,0 +1,30 @@
+<main>
+  <div class="bar">
+    <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
+    <input class="search" id="search" type="search" placeholder="Filter by name" aria-label="Filter by name">
+    <button class="quiet" id="refresh" type="button" hidden>Refresh</button>
+    <div class="switch" role="group" aria-label="How to show them">
+      <button id="as-grid" type="button" aria-pressed="true" aria-label="Pictures" title="Pictures"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></button>
+      <button id="as-rows" type="button" aria-pressed="false" aria-label="List" title="List"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="14" height="2.4" rx="1"/><rect x="1" y="6.8" width="14" height="2.4" rx="1"/><rect x="1" y="11.6" width="14" height="2.4" rx="1"/></svg></button>
+    </div>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="Show only" hidden></div>
+  <div class="problem" id="problem" hidden><span id="problem-text"></span><button id="again" type="button">Try again</button></div>
+  <div id="groups"></div>
+  <div class="note" id="note" hidden></div>
+  <button class="quiet" id="more" type="button" hidden>More</button>
+</main>
+<dialog id="look" aria-labelledby="look-title">
+  <div class="stage" id="stage">
+    <span id="stage-icon"></span>
+    <img id="stage-image" alt="" hidden>
+    <div class="say" id="stage-say" hidden></div>
+    <button class="step" id="previous" type="button" aria-label="Previous">&#8249;</button>
+    <button class="step" id="next" type="button" aria-label="Next">&#8250;</button>
+  </div>
+  <div class="facts">
+    <div class="what"><div class="title" id="look-title"></div><div class="detail" id="look-detail"></div></div>
+    <button id="close" type="button">Close</button>
+    <button id="open" type="button">Open</button>
+  </div>
+</dialog>
