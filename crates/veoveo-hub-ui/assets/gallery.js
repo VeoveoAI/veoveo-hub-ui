@@ -134,27 +134,37 @@ const veoveoGallery = (configure) => {
       }
     });
   };
+  // A card's cover takes a turn to list what it holds, and its pictures take turns of their own: a
+  // turn that waited for them would hold the place they need.
   const fillCover = (thumb, item) => {
     inTurn(async () => {
       const inside = (await config.cover(item)).slice(0, 4);
       const urls = [];
-      await Promise.all(inside.map((one, index) => new Promise((done) => {
+      let left = inside.length;
+      const finish = () => {
+        const found = urls.filter(Boolean);
+        if (!found.length) return;
+        const mosaic = document.createElement("div");
+        mosaic.className = "mosaic";
+        mosaic.dataset.count = String(found.length);
+        for (const url of found) {
+          const cell = document.createElement("span");
+          place(cell, url);
+          mosaic.append(cell);
+        }
+        thumb.append(mosaic);
+        thumb.classList.add("has-picture");
+      };
+      inside.forEach((one, index) => {
         inTurn(async () => {
-          try { urls[index] = await picture(one); } finally { done(); }
+          try {
+            urls[index] = await picture(one);
+          } finally {
+            left -= 1;
+            if (left === 0) finish();
+          }
         });
-      })));
-      const found = urls.filter(Boolean);
-      if (!found.length) return;
-      const mosaic = document.createElement("div");
-      mosaic.className = "mosaic";
-      mosaic.dataset.count = String(found.length);
-      for (const url of found) {
-        const cell = document.createElement("span");
-        place(cell, url);
-        mosaic.append(cell);
-      }
-      thumb.append(mosaic);
-      thumb.classList.add("has-picture");
+      });
     });
   };
 

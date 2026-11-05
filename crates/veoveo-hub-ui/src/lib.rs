@@ -115,6 +115,15 @@ mod tests {
     }
 
     #[test]
+    fn a_cover_never_waits_inside_its_turn() {
+        // A turn that awaited the pictures it queues would hold the places they need, and six such
+        // cards would stop every picture on the page.
+        let start = GALLERY_SCRIPT.find("const fillCover").unwrap();
+        let end = start + GALLERY_SCRIPT[start..].find("const card =").unwrap();
+        assert!(!GALLERY_SCRIPT[start..end].contains("Promise.all"));
+    }
+
+    #[test]
     fn the_scripts_parse() {
         let folder = tempfile_dir();
         let path = folder.join("page.js");
