@@ -16,6 +16,19 @@ that server moves its pin, and moves nothing else.
 | `APP_SCRIPT` | `veoveoApp`: the MCP Apps bridge and the host's theme, for any App |
 | `gallery(title, adapter)` | The document of a gallery App |
 
+## The Look
+
+An App uses the host's theme, so it matches where it is shown, and these values where the host says nothing. Any new App starts from them.
+
+| What | Value |
+|---|---|
+| Colors | `--bg`, `--soft`, `--fg`, `--muted`, `--line`, `--accent`, `--danger`, each from the host's `--color-*` variable, with a light and a dark value |
+| Type | The host's sans, 14 px body, 16 px semibold for where you are, 12 px muted for facts |
+| Spacing | 16 px around the page, 14 px between things, 18 px between rows of cards |
+| Corners | 10 px on cards, 8 px on controls, 14 px on a dialog |
+| Controls | A 1 px `--line` border. Hover and focus show `--accent`; a chosen one is filled |
+| Motion | Under 0.2 s, and none when a person asks for reduced motion |
+
 ## The Gallery
 
 A gallery lists what a server has, with a picture of each: cards or rows, a name filter, filters by kind, folders and groups, more
