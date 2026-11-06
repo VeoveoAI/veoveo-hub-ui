@@ -186,20 +186,24 @@ const veoveoGallery = (configure) => {
   };
   // A card's cover is what the server says shows it, by one request for the screen. Its pictures
   // are asked for after that request's turn ends: a turn that waited for them would hold the place
-  // they need.
-  const showCover = async (thumb, inside) => {
-    const found = (await Promise.all(inside.slice(0, 4).map(smallPicture))).filter(Boolean);
-    if (!found.length) return;
+  // they need. Each shows as it comes, so a picture still to be drawn hides none that is ready.
+  const showCover = (thumb, inside) => {
     const mosaic = document.createElement("div");
     mosaic.className = "mosaic";
-    mosaic.dataset.count = String(found.length);
-    for (const url of found) {
+    let count = 0;
+    inside.slice(0, 4).forEach(async (one) => {
+      const url = await smallPicture(one);
+      if (!url) return;
       const cell = document.createElement("span");
       place(cell, url);
       mosaic.append(cell);
-    }
-    thumb.append(mosaic);
-    thumb.classList.add("has-picture");
+      count += 1;
+      mosaic.dataset.count = String(count);
+      if (count === 1) {
+        thumb.append(mosaic);
+        thumb.classList.add("has-picture");
+      }
+    });
   };
   const askCover = gathering((jobs) => inTurn(async () => {
     const answers = await config.covers(jobs.map((job) => job.item)).catch(() => []);
