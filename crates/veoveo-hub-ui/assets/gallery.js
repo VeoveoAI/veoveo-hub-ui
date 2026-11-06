@@ -12,6 +12,9 @@
 //     covers: async (items) => [[items]], // for items with `folder`: whose pictures show on each card
 //   }));
 //
+// The adapter receives `ui`, whose `go(at)` moves the gallery to a place it would `list`, for a page
+// that holds a gallery beside something else.
+//
 // An item is { key, name, kind, about, fields, badge, group, folder, disabled, cover, into }. `about` is
 // one short fact for its card. `fields` is the record a server holds of it, shown as it is, never as a
 // sentence. `cover` is whose pictures show a folder, when the page knows. `into` is where a closer look
@@ -434,6 +437,7 @@ const veoveoGallery = (configure) => {
     $("chips").hidden = true;
     return load(true);
   };
+  ui.go = go;
 
   // A closer look.
   let looking = -1;

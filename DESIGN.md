@@ -60,6 +60,8 @@ pictures that are ready costs one request; each one still to be drawn then takes
 and pictures are kept for as long as the page is open. A card shows its kind's icon until its picture comes, and goes on showing it when
 there is none.
 
+An adapter's `ui.go(at)` moves the gallery to a place it would list, for a server whose page holds a gallery beside something else.
+
 Every name is a stranger's text, so it reaches the page only as text. A picture reaches it only as a `data:image/` URL.
 
 ## Limits
