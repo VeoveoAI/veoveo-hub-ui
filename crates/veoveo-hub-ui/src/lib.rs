@@ -147,6 +147,30 @@ mod tests {
         );
     }
 
+    #[test]
+    fn a_record_is_shown_as_it_is_under_its_own_names() {
+        let script = format!(
+            "{GALLERY_SCRIPT}\nconsole.log(JSON.stringify(veoveoFieldRows({{
+                size: 7, name: \"a b\", none: null, empty: \"\", labels: [], tags: [\"x\"],
+                provenance: {{ actingServer: \"usd\", task: null }}, metadata: {{ time: 0, on: false }}
+            }})));"
+        );
+        let ran = Command::new("node")
+            .arg("-e")
+            .arg(script)
+            .output()
+            .expect("node");
+        assert!(
+            ran.status.success(),
+            "{}",
+            String::from_utf8_lossy(&ran.stderr)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&ran.stdout).trim(),
+            r#"[["size","7"],["name","a b"],["tags","[\"x\"]"],["provenance.actingServer","usd"],["metadata.time","0"],["metadata.on","false"]]"#
+        );
+    }
+
     fn tempfile_dir() -> std::path::PathBuf {
         let folder = std::env::temp_dir().join(format!("veoveo-hub-ui-{}", std::process::id()));
         std::fs::create_dir_all(&folder).unwrap();

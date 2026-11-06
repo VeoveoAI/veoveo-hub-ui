@@ -12,7 +12,19 @@
 //     covers: async (items) => [[items]], // for items with `folder`: whose pictures show on each card
 //   }));
 //
-// An item is { key, name, kind, about, detail, badge, group, folder, disabled }.
+// An item is { key, name, kind, about, fields, badge, group, folder, disabled }. `about` is one short
+// fact for its card. `fields` is the record a server holds of it, shown as it is, never as a sentence.
+
+// A record's fields as [name, value] rows: each value under its own name, a nested one under a dotted
+// name, and nothing for what is empty.
+const veoveoFieldRows = (record, within = "") => Object.entries(record || {}).flatMap(([name, value]) => {
+  const path = within ? `${within}.${name}` : name;
+  if (value === null || value === undefined || value === "") return [];
+  if (Array.isArray(value)) return value.length ? [[path, JSON.stringify(value)]] : [];
+  if (typeof value === "object") return veoveoFieldRows(value, path);
+  return [[path, String(value)]];
+});
+
 const veoveoGallery = (configure) => {
   const PICTURE_TIMEOUT = 240000;
   const AT_ONCE = 6;
@@ -35,7 +47,6 @@ const veoveoGallery = (configure) => {
     other: '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>',
   };
   const icon = (kind) => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[kind] || ICONS.other}</svg>`;
-  const LABELS = { image: "Image", video: "Video", audio: "Audio", document: "Document", model: "3D", scene: "USD", other: "File" };
   const FILTERS = [["all", "All"], ["image", "Images"], ["video", "Video"], ["model", "3D"], ["document", "Documents"], ["audio", "Audio"], ["other", "Other"]];
   const filterOf = (item) => (item.kind === "scene" ? "model" : item.kind);
 
@@ -68,7 +79,7 @@ const veoveoGallery = (configure) => {
     return "other";
   };
 
-  const ui = { tool: veoveoApp.tool, read: veoveoApp.read, size, kindOf, extensionOf, labelOf: (kind) => LABELS[kind] || "File", PICTURE_TIMEOUT };
+  const ui = { tool: veoveoApp.tool, read: veoveoApp.read, size, kindOf, extensionOf, PICTURE_TIMEOUT };
   const config = configure(ui);
   if (config.aspect) document.documentElement.style.setProperty("--aspect", config.aspect);
   if (config.placeholder) {
@@ -368,13 +379,26 @@ const veoveoGallery = (configure) => {
   // A closer look.
   let looking = -1;
   let lookTurn = 0;
+  const drawFields = (item) => {
+    const holder = $("look-fields");
+    const rows = veoveoFieldRows(item.fields);
+    holder.replaceChildren();
+    holder.hidden = !rows.length;
+    for (const [name, value] of rows) {
+      const term = document.createElement("dt");
+      term.textContent = name;
+      const said = document.createElement("dd");
+      said.textContent = value;
+      holder.append(term, said);
+    }
+  };
   const look = async (index) => {
     const item = shown[index];
     if (!item) return;
     looking = index;
     const turn = ++lookTurn;
     $("look-title").textContent = item.name;
-    $("look-detail").textContent = item.detail || item.about || "";
+    drawFields(item);
     $("previous").disabled = index === 0;
     $("next").disabled = index === shown.length - 1;
     const image = $("stage-image");

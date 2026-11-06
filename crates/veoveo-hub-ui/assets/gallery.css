@@ -87,9 +87,13 @@ main { padding: 16px; display: grid; gap: 14px; max-width: 1680px; margin: 0 aut
 
 dialog { border: 0; padding: 0; background: #0d0f13; color: #eef0f3; width: min(1200px, calc(100vw - 32px)); max-height: calc(100vh - 32px); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 70px rgb(0 0 0 / .5); }
 dialog::backdrop { background: rgb(8 9 12 / .72); }
-dialog[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+dialog[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; }
 .stage { position: relative; min-height: 240px; height: min(72vh, 760px); display: grid; place-items: center; background: #15181e; overflow: hidden; }
 .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.fields { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 14px; margin: 0; padding: 10px 16px; max-height: 26vh; overflow: auto; border-top: 1px solid rgb(255 255 255 / .08); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.fields[hidden] { display: none; }
+.fields dt { color: #aab0ba; }
+.fields dd { margin: 0; overflow-wrap: anywhere; }
 .stage .icon { width: 72px; height: 72px; opacity: .6; }
 .stage .say { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; color: #aab0ba; font-size: 13px; }
 .stage.drawing::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, #7aa2ff, transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: slide 1.1s ease-in-out infinite; }

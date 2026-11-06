@@ -24,7 +24,7 @@ An App uses the host's theme, so it matches where it is shown, and these values 
 | What | Value |
 |---|---|
 | Colors | `--bg`, `--soft`, `--fg`, `--muted`, `--line`, `--accent`, `--danger`, each from the host's `--color-*` variable, with a light and a dark value |
-| Type | The host's sans, 14 px body, 16 px semibold for where you are, 12 px muted for facts |
+| Type | The host's sans, 14 px body, 16 px semibold for where you are, 12 px muted for facts. A record's fields are 12 px monospace |
 | Spacing | 16 px around the page, 14 px between things, 18 px between rows of cards |
 | Corners | 10 px on cards, 8 px on controls, 14 px on a dialog |
 | Controls | A 1 px `--line` border. Hover and focus show `--accent`; a chosen one is filled |
@@ -48,8 +48,12 @@ supplies an adapter, a script that calls `veoveoGallery` with:
 | `enter(item)` | For an item with `folder`: where it leads |
 | `covers(items)` | Optional, for items with `folder`: by one request, the items whose pictures show on each card. The server decides them; the page never searches |
 
-An item is `{key, name, kind, about, detail, badge, group, folder, disabled}`. `ui.kindOf(name, mediaType)` says what a file holds, by
+An item is `{key, name, kind, about, fields, badge, group, folder, disabled}`. `ui.kindOf(name, mediaType)` says what a file holds, by
 name and then by media type.
+
+`about` is one short fact for its card, such as its size. `fields` is the record the server holds of an item, and the closer look shows it
+as it is: each value under its own name, a nested one under a dotted name such as `provenance.actingServer`. A gallery never composes a
+record into a sentence, and adds nothing to what the record says.
 
 Pictures load as cards come on screen. What comes on screen together is asked for together, at most 24 to a request, so a screen of
 pictures that are ready costs one request; each one still to be drawn then takes its own. Requests run six at a time, the newest first,
