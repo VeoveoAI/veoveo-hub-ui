@@ -43,14 +43,18 @@ supplies an adapter, a script that calls `veoveoGallery` with:
 | `placeholder`, `remoteSearch`, `refresh` | The filter's words, whether the server filters by name, and whether to offer Refresh |
 | `list({at, search, cursor})` | A page: `items`, `next`, `trail` for where it is, `empty` for an empty one |
 | `thumbnail(item, size)` | `{mediaType, data}` from a tool of the server's own |
+| `thumbnails(items, size)` | Optional: by one request, an answer for each item, `{mediaType, data}` for what is ready, nothing when there is no picture, or `{pending: true}` for one that `thumbnail` can still draw |
 | `open(item)` | The URL `ui/open-link` opens |
-| `enter(item)`, `cover(item)` | For an item with `folder`: where it leads, and whose pictures show on its card |
+| `enter(item)` | For an item with `folder`: where it leads |
+| `covers(items)` | Optional, for items with `folder`: by one request, the items whose pictures show on each card. The server decides them; the page never searches |
 
 An item is `{key, name, kind, about, detail, badge, group, folder, disabled}`. `ui.kindOf(name, mediaType)` says what a file holds, by
 name and then by media type.
 
-Pictures load as cards come on screen, six at a time and the newest first, and are kept for as long as the page is open. A card shows
-its kind's icon until its picture comes, and goes on showing it when there is none.
+Pictures load as cards come on screen. What comes on screen together is asked for together, at most 24 to a request, so a screen of
+pictures that are ready costs one request; each one still to be drawn then takes its own. Requests run six at a time, the newest first,
+and pictures are kept for as long as the page is open. A card shows its kind's icon until its picture comes, and goes on showing it when
+there is none.
 
 Every name is a stranger's text, so it reaches the page only as text. A picture reaches it only as a `data:image/` URL.
 

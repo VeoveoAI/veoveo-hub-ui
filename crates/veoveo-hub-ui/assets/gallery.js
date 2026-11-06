@@ -6,15 +6,20 @@
 //     title, aspect, placeholder, remoteSearch, refresh,
 //     list: async ({ at, search, cursor }) => ({ items, next, trail, empty }),
 //     thumbnail: async (item, size) => ({ mediaType, data }),
+//     thumbnails: async (items, size) => [{ mediaType, data, pending }], // what is ready, by one request
 //     open: (item) => url,
 //     enter: (item) => at,            // for an item with `folder`
-//     cover: async (item) => [items], // for an item with `folder`: whose pictures show on its card
+//     covers: async (items) => [[items]], // for items with `folder`: whose pictures show on each card
 //   }));
 //
 // An item is { key, name, kind, about, detail, badge, group, folder, disabled }.
 const veoveoGallery = (configure) => {
   const PICTURE_TIMEOUT = 240000;
   const AT_ONCE = 6;
+  // What the cards coming on screen ask for gathers this long, so a screenful is one request of
+  // at most this many.
+  const GATHER_MS = 30;
+  const TOGETHER = 24;
   const $ = (id) => document.getElementById(id);
 
   const ICONS = {
@@ -96,14 +101,50 @@ const veoveoGallery = (configure) => {
     }
   };
   const inTurn = (run) => { waiting.push({ generation, run }); pump(); };
+  const pictureUrl = (answer) => (answer && answer.data && /^image\//.test(answer.mediaType || "") ? `data:${answer.mediaType};base64,${answer.data}` : null);
   const picture = async (item, wanted = "small") => {
     const key = `${wanted}\0${item.key}`;
     if (pictures.has(key)) return pictures.get(key);
-    const answer = await config.thumbnail(item, wanted);
-    const url = answer && answer.data && /^image\//.test(answer.mediaType || "") ? `data:${answer.mediaType};base64,${answer.data}` : null;
+    const url = pictureUrl(await config.thumbnail(item, wanted));
     pictures.set(key, url);
     return url;
   };
+  const gathering = (send) => {
+    let asked = [];
+    let timer = null;
+    const flush = () => {
+      timer = null;
+      const current = asked.filter((job) => job.generation === generation);
+      asked = [];
+      for (let first = 0; first < current.length; first += TOGETHER) send(current.slice(first, first + TOGETHER));
+    };
+    return (job) => {
+      asked.push({ ...job, generation });
+      timer ??= setTimeout(flush, GATHER_MS);
+    };
+  };
+  const drawnAlone = (item, done) => inTurn(() => picture(item).then(done, () => done(null)));
+  // One request answers what is ready. A picture still to be drawn takes its own turn, so a slow
+  // draw never holds up a screen.
+  const askReady = gathering((jobs) => inTurn(async () => {
+    const answers = await config.thumbnails(jobs.map((job) => job.item), "small").catch(() => []);
+    jobs.forEach(({ item, done }, index) => {
+      const answer = answers[index];
+      if (!answer || answer.pending) {
+        drawnAlone(item, done);
+        return;
+      }
+      const url = pictureUrl(answer);
+      pictures.set(`small\0${item.key}`, url);
+      done(url);
+    });
+  }));
+  const smallPicture = (item) => new Promise((done) => {
+    const known = pictures.get(`small\0${item.key}`);
+    if (known !== undefined) done(known);
+    else if (config.thumbnails) askReady({ item, done });
+    else drawnAlone(item, done);
+  });
   const watcher = new IntersectionObserver((seen) => {
     for (const { isIntersecting, target } of seen) {
       if (!isIntersecting) continue;
@@ -120,53 +161,36 @@ const veoveoGallery = (configure) => {
     holder.append(image);
   };
 
-  const fillPicture = (thumb, item) => {
+  const fillPicture = async (thumb, item) => {
     thumb.classList.add("drawing");
-    inTurn(async () => {
-      try {
-        const url = await picture(item);
-        if (url) {
-          place(thumb, url);
-          thumb.classList.add("has-picture");
-        }
-      } finally {
-        thumb.classList.remove("drawing");
-      }
-    });
+    const url = await smallPicture(item);
+    if (url) {
+      place(thumb, url);
+      thumb.classList.add("has-picture");
+    }
+    thumb.classList.remove("drawing");
   };
-  // A card's cover takes a turn to list what it holds, and its pictures take turns of their own: a
-  // turn that waited for them would hold the place they need.
-  const fillCover = (thumb, item) => {
-    inTurn(async () => {
-      const inside = (await config.cover(item)).slice(0, 4);
-      const urls = [];
-      let left = inside.length;
-      const finish = () => {
-        const found = urls.filter(Boolean);
-        if (!found.length) return;
-        const mosaic = document.createElement("div");
-        mosaic.className = "mosaic";
-        mosaic.dataset.count = String(found.length);
-        for (const url of found) {
-          const cell = document.createElement("span");
-          place(cell, url);
-          mosaic.append(cell);
-        }
-        thumb.append(mosaic);
-        thumb.classList.add("has-picture");
-      };
-      inside.forEach((one, index) => {
-        inTurn(async () => {
-          try {
-            urls[index] = await picture(one);
-          } finally {
-            left -= 1;
-            if (left === 0) finish();
-          }
-        });
-      });
-    });
+  // A card's cover is what the server says shows it, by one request for the screen. Its pictures
+  // are asked for after that request's turn ends: a turn that waited for them would hold the place
+  // they need.
+  const showCover = async (thumb, inside) => {
+    const found = (await Promise.all(inside.slice(0, 4).map(smallPicture))).filter(Boolean);
+    if (!found.length) return;
+    const mosaic = document.createElement("div");
+    mosaic.className = "mosaic";
+    mosaic.dataset.count = String(found.length);
+    for (const url of found) {
+      const cell = document.createElement("span");
+      place(cell, url);
+      mosaic.append(cell);
+    }
+    thumb.append(mosaic);
+    thumb.classList.add("has-picture");
   };
+  const askCover = gathering((jobs) => inTurn(async () => {
+    const answers = await config.covers(jobs.map((job) => job.item)).catch(() => []);
+    jobs.forEach(({ thumb }, index) => { showCover(thumb, answers[index] || []); });
+  }));
 
   const card = (item, index) => {
     const button = document.createElement("button");
@@ -195,8 +219,8 @@ const veoveoGallery = (configure) => {
     if (item.disabled) return button;
     if (item.folder) {
       button.addEventListener("click", () => go(config.enter(item)));
-      if (config.cover) {
-        button._onScreen = () => fillCover(thumb, item);
+      if (config.covers) {
+        button._onScreen = () => askCover({ item, thumb });
         watcher.observe(button);
       }
     } else {
