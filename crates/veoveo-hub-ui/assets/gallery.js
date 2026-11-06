@@ -4,7 +4,7 @@
 //
 //   veoveoGallery((ui) => ({
 //     title, aspect, placeholder, remoteSearch, refresh,
-//     list: async ({ at, search, cursor }) => ({ items, next, trail, empty }),
+//     list: async ({ at, search, cursor }) => ({ items, next, trail, empty, pictures }), // pictures: what is ready, each { key, mediaType, data }
 //     thumbnail: async (item, size) => ({ mediaType, data }),
 //     thumbnails: async (items, size) => [{ mediaType, data, pending }], // what is ready, by one request
 //     open: (item) => url,
@@ -12,8 +12,10 @@
 //     covers: async (items) => [[items]], // for items with `folder`: whose pictures show on each card
 //   }));
 //
-// An item is { key, name, kind, about, fields, badge, group, folder, disabled }. `about` is one short
-// fact for its card. `fields` is the record a server holds of it, shown as it is, never as a sentence.
+// An item is { key, name, kind, about, fields, badge, group, folder, disabled, cover, into }. `about` is
+// one short fact for its card. `fields` is the record a server holds of it, shown as it is, never as a
+// sentence. `cover` is whose pictures show a folder, when the page knows. `into` is where a closer look
+// can lead on to.
 
 // A record's fields as [name, value] rows: each value under its own name, a nested one under a dotted
 // name, and nothing for what is empty.
@@ -98,6 +100,7 @@ const veoveoGallery = (configure) => {
   let filter = "all";
   let rows = false;
   let generation = 0;
+  let loads = 0;
 
   // Pictures: only for what is on screen, at most AT_ONCE at a time, the newest asked first.
   const pictures = new Map();
@@ -230,7 +233,10 @@ const veoveoGallery = (configure) => {
     if (item.disabled) return button;
     if (item.folder) {
       button.addEventListener("click", () => go(config.enter(item)));
-      if (config.covers) {
+      if (item.cover) {
+        button._onScreen = () => showCover(thumb, item.cover);
+        watcher.observe(button);
+      } else if (config.covers) {
         button._onScreen = () => askCover({ item, thumb });
         watcher.observe(button);
       }
@@ -296,11 +302,28 @@ const veoveoGallery = (configure) => {
     return holder;
   };
 
-  const draw = () => {
-    generation += 1;
+  const showing = (list) => {
     const wanted = config.remoteSearch ? "" : $("search").value.trim().toLowerCase();
     const named = (item) => !wanted || item.name.toLowerCase().includes(wanted);
-    const visible = items.filter((item) => named(item) && (filter === "all" || (!item.folder && !item.disabled && filterOf(item) === filter)));
+    return list.filter((item) => named(item) && (filter === "all" || (!item.folder && !item.disabled && filterOf(item) === filter)));
+  };
+  // A next page joins what is showing, so what is on screen stays as it is, however long the list.
+  const drawMore = (added) => {
+    const cards = $("groups").querySelector(".grid");
+    if (!cards || added.some((item) => item.group)) {
+      draw();
+      return;
+    }
+    for (const item of showing(added)) {
+      const looked = !item.folder && !item.disabled;
+      if (looked) shown.push(item);
+      cards.append(card(item, looked ? shown.length - 1 : -1));
+    }
+  };
+
+  const draw = () => {
+    generation += 1;
+    const visible = showing(items);
     // Folders first, as a listing has them, and only files take a closer look.
     shown = visible.filter((item) => !item.folder && !item.disabled);
     const holder = $("groups");
@@ -340,6 +363,10 @@ const veoveoGallery = (configure) => {
     $("groups").replaceChildren(cards);
   };
 
+  const nextWatcher = new IntersectionObserver((seen) => {
+    if (seen.some(({ isIntersecting }) => isIntersecting) && cursor) load(false);
+  }, { rootMargin: "600px" });
+
   const load = async (fresh) => {
     if (fresh) {
       cursor = null;
@@ -347,21 +374,31 @@ const veoveoGallery = (configure) => {
     }
     showProblem("");
     showNote("");
-    const mine = ++generation;
+    if (fresh) generation += 1;
+    const mine = ++loads;
     try {
       const search = config.remoteSearch ? $("search").value.trim() : "";
       const page = await config.list({ at, search, cursor });
-      if (mine !== generation) return;
+      if (mine !== loads) return;
+      for (const picture of page.pictures || []) pictures.set(`small\0${picture.key}`, pictureUrl(picture));
       items = fresh ? page.items : [...items, ...page.items];
       trail = page.trail || [];
       emptyText = page.empty || "";
       cursor = page.next || null;
       $("more").hidden = !cursor;
-      drawCrumbs();
-      drawChips();
-      draw();
+      if (fresh) {
+        drawCrumbs();
+        drawChips();
+        draw();
+      } else {
+        drawChips();
+        drawMore(page.items);
+      }
+      // The next page, when the end of this one is already in sight.
+      nextWatcher.unobserve($("more"));
+      if (cursor) nextWatcher.observe($("more"));
     } catch (error) {
-      if (mine !== generation) return;
+      if (mine !== loads) return;
       $("groups").replaceChildren();
       if (fresh) items = [];
       showProblem(`This could not be read: ${error.message}`);
@@ -399,6 +436,7 @@ const veoveoGallery = (configure) => {
     const turn = ++lookTurn;
     $("look-title").textContent = item.name;
     drawFields(item);
+    $("into").hidden = !item.into;
     $("previous").disabled = index === 0;
     $("next").disabled = index === shown.length - 1;
     const image = $("stage-image");
@@ -454,6 +492,11 @@ const veoveoGallery = (configure) => {
   $("refresh").addEventListener("click", () => load(true));
   $("more").addEventListener("click", () => load(false));
   $("close").addEventListener("click", () => $("look").close());
+  $("into").addEventListener("click", () => {
+    const item = shown[looking];
+    $("look").close();
+    if (item && item.into) go(item.into);
+  });
   $("open").addEventListener("click", openLooked);
   $("previous").addEventListener("click", () => look(looking - 1));
   $("next").addEventListener("click", () => look(looking + 1));

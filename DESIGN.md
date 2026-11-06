@@ -41,21 +41,21 @@ supplies an adapter, a script that calls `veoveoGallery` with:
 | `title` | The App's name |
 | `aspect` | The cards' shape, `4 / 3` by default |
 | `placeholder`, `remoteSearch`, `refresh` | The filter's words, whether the server filters by name, and whether to offer Refresh |
-| `list({at, search, cursor})` | A page: `items`, `next`, `trail` for where it is, `empty` for an empty one |
+| `list({at, search, cursor})` | A page: `items`, `next`, `trail` for where it is, `empty` for an empty one, and optionally `pictures`, what is ready of what is on it, each `{key, mediaType, data}`, none of which then costs another request |
 | `thumbnail(item, size)` | `{mediaType, data}` from a tool of the server's own |
 | `thumbnails(items, size)` | Optional: by one request, an answer for each item, `{mediaType, data}` for what is ready, nothing when there is no picture, or `{pending: true}` for one that `thumbnail` can still draw |
 | `open(item)` | The URL `ui/open-link` opens |
 | `enter(item)` | For an item with `folder`: where it leads |
-| `covers(items)` | Optional, for items with `folder`: by one request, the items whose pictures show on each card. The server decides them; the page never searches |
+| `covers(items)` | Optional, for items with `folder` and no `cover`: by one request, the items whose pictures show on each card. The server decides them; the page never searches |
 
-An item is `{key, name, kind, about, fields, badge, group, folder, disabled}`. `ui.kindOf(name, mediaType)` says what a file holds, by
+An item is `{key, name, kind, about, fields, badge, group, folder, disabled, cover, into}`. `cover` is the items whose pictures show a folder, when the page already knows them. `into` is where an item's closer look can lead on to, as `Files`. `ui.kindOf(name, mediaType)` says what a file holds, by
 name and then by media type.
 
 `about` is one short fact for its card, such as its size. `fields` is the record the server holds of an item, and the closer look shows it
 as it is: each value under its own name, a nested one under a dotted name such as `provenance.actingServer`. A gallery never composes a
 record into a sentence, and adds nothing to what the record says.
 
-Pictures load as cards come on screen. What comes on screen together is asked for together, at most 24 to a request, so a screen of
+The next page loads as the end of the list comes near, and joins what is showing, so what is on screen stays as it is however long the list. Pictures that came with a page show at once. The others load as cards come on screen. What comes on screen together is asked for together, at most 24 to a request, so a screen of
 pictures that are ready costs one request; each one still to be drawn then takes its own. Requests run six at a time, the newest first,
 and pictures are kept for as long as the page is open. A card shows its kind's icon until its picture comes, and goes on showing it when
 there is none.
