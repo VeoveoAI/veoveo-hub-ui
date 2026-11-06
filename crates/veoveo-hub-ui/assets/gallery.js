@@ -313,16 +313,34 @@ const veoveoGallery = (configure) => {
   };
   // A next page joins what is showing, so what is on screen stays as it is, however long the list.
   const drawMore = (added) => {
-    const cards = $("groups").querySelector(".grid");
-    if (!cards || added.some((item) => item.group)) {
-      draw();
-      return;
-    }
     for (const item of showing(added)) {
       const looked = !item.folder && !item.disabled;
       if (looked) shown.push(item);
-      cards.append(card(item, looked ? shown.length - 1 : -1));
+      groupCards(item.group || "").append(card(item, looked ? shown.length - 1 : -1));
     }
+  };
+  // The cards of a group, the newest group last, as `draw` leaves them.
+  const groupCards = (name) => {
+    const holder = $("groups");
+    const sections = holder.querySelectorAll("section.group");
+    const last = sections[sections.length - 1];
+    if (!name) {
+      let cards = holder.querySelector(":scope > .grid");
+      if (!cards) {
+        cards = grid();
+        holder.prepend(cards);
+      }
+      return cards;
+    }
+    if (last && last.querySelector("h2").textContent === name) return last.querySelector(".grid");
+    const section = document.createElement("section");
+    section.className = "group";
+    const title = document.createElement("h2");
+    title.textContent = name;
+    const cards = grid();
+    section.append(title, cards);
+    holder.append(section);
+    return cards;
   };
 
   const draw = () => {
