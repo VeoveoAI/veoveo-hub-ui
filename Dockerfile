@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.27@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 # Stages: dev is the development environment and check is the single gate.
 
-FROM rust:1.99.0-trixie@sha256:6ff07edce8775d0f64be7aba9197229407301bddf2054d62c27b541a6238a181 AS dev
+FROM rust:1.100.0-trixie@sha256:223cc32ddca8f3ee90c436dbc94b6b5f052ea7f9653c5201e9612f08ad7d21b8 AS dev
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates git nodejs procps \
     && rm -rf /var/lib/apt/lists/* /var/log/apt /var/log/dpkg.log \
